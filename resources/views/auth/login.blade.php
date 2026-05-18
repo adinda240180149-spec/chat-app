@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daftar Akun - ChatApp</title>
+    <title>Masuk - ChatApp</title>
     <!-- Google Fonts Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -145,6 +145,17 @@
         .alert-error ul {
             list-style: none;
         }
+
+        .alert-success {
+            background-color: #f0fff4;
+            border-left: 4px solid #48bb78;
+            color: #2f855a;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -152,9 +163,15 @@
     <div class="auth-container">
         <div class="auth-card">
             <div class="auth-header">
-                <h1>Daftar Akun Baru</h1>
-                <p>Mulai mengobrol secara real-time</p>
+                <h1>Selamat Datang</h1>
+                <p>Masuk ke akun ChatApp Anda</p>
             </div>
+
+            @if (session('success'))
+                <div class="alert-success">
+                    {{ session('success') }}
+                </div>
+            @endif
 
             @if ($errors->any())
                 <div class="alert-error">
@@ -166,33 +183,23 @@
                 </div>
             @endif
 
-            <form action="{{ route('register') }}" method="POST">
+            <form action="{{ route('login') }}" method="POST">
                 @csrf
                 <div class="form-group">
-                    <label for="name">Nama Lengkap</label>
-                    <input type="text" name="name" id="name" class="form-control" placeholder="Contoh: Budi Santoso" value="{{ old('name') }}" required autocomplete="name" autofocus>
-                </div>
-
-                <div class="form-group">
                     <label for="username">Username</label>
-                    <input type="text" name="username" id="username" class="form-control" placeholder="Contoh: budis123" value="{{ old('username') }}" required autocomplete="username">
+                    <input type="text" name="username" id="username" class="form-control" placeholder="Masukkan username Anda" value="{{ old('username') }}" required autocomplete="username" autofocus>
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" name="password" id="password" class="form-control" placeholder="Minimal 6 karakter" required autocomplete="new-password">
+                    <input type="password" name="password" id="password" class="form-control" placeholder="Masukkan password Anda" required autocomplete="current-password">
                 </div>
 
-                <div class="form-group">
-                    <label for="password_confirmation">Konfirmasi Password</label>
-                    <input type="password" name="password_confirmation" id="password_confirmation" class="form-control" placeholder="Ulangi password" required autocomplete="new-password">
-                </div>
-
-                <button type="submit" class="btn-primary">Daftar Sekarang</button>
+                <button type="submit" class="btn-primary">Masuk</button>
             </form>
 
             <div class="auth-footer">
-                Sudah punya akun? <a href="{{ route('login') }}">Masuk di sini</a>
+                Belum punya akun? <a href="{{ route('register') }}">Daftar di sini</a>
             </div>
         </div>
     </div>

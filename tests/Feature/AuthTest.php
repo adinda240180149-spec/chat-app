@@ -43,3 +43,59 @@ test('pendaftaran gagal jika password tidak sama', function () {
     $response->assertSessionHasErrors(['password']);
     $this->assertGuest();
 });
+
+test('halaman login dapat diakses', function () {
+    $response = $this->get('/login');
+
+    $response->assertStatus(200);
+    $response->assertSee('Selamat Datang');
+});
+
+test('user dapat login dengan kredensial yang valid', function () {
+    // Membuat user percobaan
+    $user = User::create([
+        'name' => 'Andi Pratama',
+        'username' => 'andi',
+        'password' => bcrypt('password123'),
+    ]);
+
+    $response = $this->post('/login', [
+        'username' => 'andi',
+        'password' => 'password123',
+    ]);
+
+    $response->assertRedirect(route('dashboard'));
+    $this->assertAuthenticatedAs($user);
+});
+
+test('user tidak dapat login dengan password salah', function () {
+    // Membuat user percobaan
+    $user = User::create([
+        'name' => 'Andi Pratama',
+        'username' => 'andi',
+        'password' => bcrypt('password123'),
+    ]);
+
+    $response = $this->post('/login', [
+        'username' => 'andi',
+        'password' => 'passwordsalah',
+    ]);
+
+    $response->assertSessionHasErrors(['username']);
+    $this->assertGuest();
+});
+
+test('user dapat logout dengan sukses', function () {
+    $user = User::create([
+        'name' => 'Andi Pratama',
+        'username' => 'andi',
+        'password' => bcrypt('password123'),
+    ]);
+
+    // Login sebagai user
+    $response = $this->actingAs($user)
+                     ->post('/logout');
+
+    $response->assertRedirect(route('login'));
+    $this->assertGuest();
+});

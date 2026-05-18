@@ -43,4 +43,51 @@ class AuthController extends Controller
         // Alihkan ke halaman dashboard
         return redirect()->route('dashboard')->with('success', 'Registrasi berhasil! Selamat datang.');
     }
+
+    // Tampilkan form login
+    public function showLogin()
+    {
+        return view('auth.login');
+    }
+
+    // Tangani proses login
+    public function login(Request $request)
+    {
+        // Validasi input
+        $credentials = $request->validate([
+            'username' => 'required|string',
+            'password' => 'required|string',
+        ], [
+            'username.required' => 'Username wajib diisi.',
+            'password.required' => 'Password wajib diisi.',
+        ]);
+
+        // Normalisasi username menjadi huruf kecil
+        $credentials['username'] = strtolower($credentials['username']);
+
+        // Coba autentikasi
+        if (Auth::attempt($credentials, $request->filled('remember'))) {
+            // Regenerasi session ID demi keamanan
+            $request->session()->regenerate();
+
+            return redirect()->route('dashboard')->with('success', 'Berhasil login! Selamat kembali.');
+        }
+
+        // Jika gagal, kembalikan dengan pesan error
+        return back()->withErrors([
+            'username' => 'Username atau password salah.',
+        ])->withInput($request->only('username'));
+    }
+
+    // Tangani proses logout
+    public function logout(Request $request)
+    {
+        Auth::logout();
+
+        // Bersihkan sesi
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login')->with('success', 'Anda telah berhasil keluar.');
+    }
 }
