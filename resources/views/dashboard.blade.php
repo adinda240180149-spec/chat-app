@@ -372,6 +372,140 @@
             from { opacity: 1; }
             to { opacity: 0; visibility: hidden; }
         }
+
+        /* 3. Obrolan Aktif (Stage 8) */
+        .chat-header {
+            height: 64px;
+            border-bottom: 1px solid #f0f0f0;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #ffffff;
+        }
+
+        .chat-header-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #333333;
+        }
+
+        .chat-header-subtitle {
+            font-size: 11px;
+            color: #ff69b4;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: #fafafa;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .message-row {
+            display: flex;
+            width: 100%;
+        }
+
+        .message-row.sent {
+            justify-content: flex-end;
+        }
+
+        .message-row.received {
+            justify-content: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 65%;
+            padding: 10px 14px;
+            font-size: 14px;
+            line-height: 1.5;
+            position: relative;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .message-row.sent .message-bubble {
+            background-color: #ff69b4;
+            color: #ffffff;
+            border-radius: 16px 16px 4px 16px;
+        }
+
+        .message-row.received .message-bubble {
+            background-color: #ffffff;
+            color: #333333;
+            border: 1px solid #eeeeee;
+            border-radius: 16px 16px 16px 4px;
+        }
+
+        .message-sender {
+            font-size: 11px;
+            font-weight: 600;
+            color: #ff69b4;
+            margin-bottom: 4px;
+        }
+
+        .message-time {
+            font-size: 10px;
+            text-align: right;
+            margin-top: 4px;
+            opacity: 0.7;
+        }
+
+        .message-row.sent .message-time {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .message-row.received .message-time {
+            color: #999999;
+        }
+
+        .chat-footer {
+            padding: 15px 20px;
+            background-color: #ffffff;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .message-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 16px;
+            font-size: 14px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .message-input:focus {
+            border-color: #ff69b4;
+        }
+
+        .btn-send {
+            background-color: #ff69b4;
+            color: #ffffff;
+            border: none;
+            padding: 0 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-send:hover {
+            background-color: #ff479d;
+        }
     </style>
 </head>
 <body>
@@ -494,7 +628,56 @@
                     <p>Pilih percakapan yang sudah ada di sidebar kiri, atau ketuk tombol tambah untuk memulai percakapan baru.</p>
                 </div>
             @else
-                <!-- Area ini akan diisi layout pesan aktif di Stage 8 -->
+                <!-- Header Chat Aktif -->
+                @php
+                    if ($activeChat->type === 'private') {
+                        $otherUser = $activeChat->users->where('id', '!=', Auth::id())->first();
+                        $activeChatName = $otherUser ? $otherUser->name : 'Akun Terhapus';
+                        $subtitle = 'Obrolan Pribadi';
+                    } else {
+                        $activeChatName = $activeChat->name;
+                        $subtitle = 'Grup Obrolan';
+                    }
+                @endphp
+                <div class="chat-header">
+                    <div>
+                        <h2 class="chat-header-title">{{ $activeChatName }}</h2>
+                        <div class="chat-header-subtitle">{{ $subtitle }}</div>
+                    </div>
+                </div>
+
+                <!-- Daftar Pesan -->
+                <div class="chat-messages" id="chatMessages">
+                    @if ($activeChat->messages->isEmpty())
+                        <div style="text-align: center; color: #888888; font-size: 13px; margin-top: auto; margin-bottom: auto; padding: 20px;">
+                            Belum ada pesan di sini. Kirim pesan pertama Anda untuk memulai percakapan!
+                        </div>
+                    @else
+                        @foreach ($activeChat->messages as $message)
+                            @php
+                                $isSentByMe = $message->user_id === Auth::id();
+                            @endphp
+                            <div class="message-row {{ $isSentByMe ? 'sent' : 'received' }}">
+                                <div class="message-bubble">
+                                    @if ($activeChat->type === 'group' && !$isSentByMe)
+                                        <div class="message-sender">{{ $message->user->name }}</div>
+                                    @endif
+                                    <div class="message-content">{{ $message->content }}</div>
+                                    <div class="message-time">{{ $message->created_at->format('H:i') }}</div>
+                                </div>
+                            </div>
+                        @endforeach
+                    @endif
+                </div>
+
+                <!-- Input Footer -->
+                <div class="chat-footer">
+                    <form action="{{ route('messages.send', $activeChat->id) }}" method="POST" class="message-form">
+                        @csrf
+                        <input type="text" name="content" class="message-input" placeholder="Tulis pesan..." autocomplete="off" required>
+                        <button type="submit" class="btn-send">Kirim</button>
+                    </form>
+                </div>
             @endif
         </main>
 
@@ -530,6 +713,12 @@
             setTimeout(() => {
                 toast.style.display = 'none';
             }, 3000);
+        }
+
+        // Otomatis scroll chat ke bawah saat halaman dimuat
+        const chatMessages = document.getElementById('chatMessages');
+        if (chatMessages) {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
     </script>
 </body>

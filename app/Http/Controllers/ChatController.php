@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Chat;
 use App\Models\User;
+use App\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -96,5 +97,33 @@ class ChatController extends Controller
             'chats' => $chats,
             'activeChat' => $activeChat,
         ]);
+    }
+
+    // Kirim pesan baru ke chat room aktif via HTTP
+    public function sendMessage(Request $request, $id)
+    {
+        $chat = Chat::findOrFail($id);
+
+        // Keamanan: Pastikan user yang mengirim pesan adalah anggota dari chat room ini
+        if (!$chat->users->contains(Auth::id())) {
+            abort(403, 'Anda bukan anggota dari percakapan ini.');
+        }
+
+        // Validasi konten pesan
+        $request->validate([
+            'content' => 'required|string',
+        ]);
+
+        // Simpan pesan baru ke database
+        Message::create([
+            'chat_id' => $chat->id,
+            'user_id' => Auth::id(),
+            'content' => trim($request->content),
+        ]);
+
+        // Sentuh timestamp updated_at agar chat room ini naik ke posisi teratas daftar sidebar
+        $chat->touch();
+
+        return redirect()->route('chats.view', $chat->id);
     }
 }
