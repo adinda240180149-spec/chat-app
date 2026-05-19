@@ -124,8 +124,13 @@ class ChatController extends Controller
         // Eager load relasi user agar nama pengirim tersedia pada payload broadcast
         $message->load('user');
 
-        // Pancarkan event real-time
-        broadcast(new \App\Events\MessageSent($message))->toOthers();
+        // Pancarkan event real-time dengan pengaman (try-catch) agar aplikasi tidak crash jika server WebSocket belum dijalankan di lokal
+        try {
+            broadcast(new \App\Events\MessageSent($message))->toOthers();
+        } catch (\Exception $e) {
+            // Abaikan error / catat ke log agar pengiriman chat HTTP tetap sukses dan tidak terganggu!
+            report($e);
+        }
 
         // Sentuh timestamp updated_at agar chat room ini naik ke posisi teratas daftar sidebar
         $chat->touch();
