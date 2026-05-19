@@ -7,6 +7,8 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+use App\Http\Controllers\ChatController;
+
 Route::middleware('guest')->group(function () {
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register']);
@@ -15,9 +17,6 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', function () {
-        return 'Dashboard (Akan diganti di Stage 6). User login: ' . auth()->user()->name . ' (@' . auth()->user()->username . ')<br><br>' .
-               '<form action="' . route('logout') . '" method="POST">' . csrf_field() . '<button type="submit">Logout</button></form>';
-    })->name('dashboard');
+    Route::get('/dashboard', [ChatController::class, 'index'])->name('dashboard');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
