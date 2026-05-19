@@ -23,4 +23,78 @@ class ChatController extends Controller
             'activeChat' => null, // Belum ada chat aktif yang dipilih
         ]);
     }
+
+    // Mulai chat personal (1-to-1) dengan mencari username
+    public function startPrivateChat(Request $request)
+    {
+        // Validasi input username
+        $request->validate([
+            'username' => 'required|string',
+        ], [
+            'username.required' => 'Username wajib diisi.',
+        ]);
+
+        $username = strtolower(trim($request->username));
+
+        // 1. Cari target user di database
+        $targetUser = User::where('username', $username)->first();
+
+        if (!$targetUser) {
+            return back()->withErrors(['username' => 'Username tidak ditemukan!']);
+        }
+
+        // 2. Cegah chat dengan diri sendiri
+        if ($targetUser->id === Auth::id()) {
+            return back()->withErrors(['username' => 'Anda tidak bisa memulai chat dengan diri sendiri!']);
+        }
+
+        // 3. Cek apakah chat private antara kedua user ini sudah ada
+        $existingChat = Auth::user()->chats()
+            ->where('type', 'private')
+            ->whereHas('users', function ($query) use ($targetUser) {
+                $query->where('users.id', $targetUser->id);
+            })
+            ->first();
+
+        // 4. Jika sudah ada, langsung buka chat room tersebut
+        if ($existingChat) {
+            return redirect()->route('chats.view', $existingChat->id)->with('success', 'Membuka obrolan yang sudah ada.');
+        }
+
+        // 5. Jika belum ada, buat chat room private baru
+        $chat = Chat::create([
+            'type' => 'private',
+        ]);
+
+        // Hubungkan kedua user ke chat room ini
+        $chat->users()->attach([Auth::id(), $targetUser->id]);
+
+        // Sentuh timestamp updated_at pada chat room agar muncul di urutan teratas
+        $chat->touch();
+
+        return redirect()->route('chats.view', $chat->id)->with('success', 'Obrolan baru berhasil dimulai!');
+    }
+
+    // Tampilkan detail chat room aktif
+    public function viewChat($id)
+    {
+        // Ambil data chat aktif beserta relasi users & messages
+        $activeChat = Chat::with(['users', 'messages.user'])->findOrFail($id);
+
+        // Keamanan: Pastikan user yang login adalah anggota dari chat room ini
+        if (!$activeChat->users->contains(Auth::id())) {
+            abort(403, 'Anda bukan anggota dari percakapan ini.');
+        }
+
+        // Ambil semua percakapan yang diikuti oleh user untuk merender sidebar
+        $chats = Auth::user()->chats()
+            ->with(['users', 'messages'])
+            ->latest('updated_at')
+            ->get();
+
+        return view('dashboard', [
+            'chats' => $chats,
+            'activeChat' => $activeChat,
+        ]);
+    }
 }

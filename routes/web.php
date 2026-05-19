@@ -19,4 +19,8 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [ChatController::class, 'index'])->name('dashboard');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    
+    // Rute Chatting
+    Route::post('/chats/private', [ChatController::class, 'startPrivateChat'])->name('chats.private');
+    Route::get('/chats/{chat}', [ChatController::class, 'viewChat'])->name('chats.view');
 });

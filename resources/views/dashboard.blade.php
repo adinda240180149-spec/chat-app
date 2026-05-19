@@ -413,15 +413,18 @@
                     <button class="btn-action" onclick="toggleForm('formGroup')">+ Buat Grup</button>
                 </div>
 
-                <!-- Form Panel Chat Personal (Akan Berfungsi di Stage 7) -->
-                <div class="form-panel" id="formPrivate">
+                <!-- Form Panel Chat Personal -->
+                <div class="form-panel" id="formPrivate" style="{{ $errors->has('username') ? 'display: block;' : '' }}">
                     <h3>Tambah Chat Personal</h3>
-                    <form action="#" method="POST">
+                    <form action="{{ route('chats.private') }}" method="POST">
                         @csrf
                         <div class="form-panel-group">
-                            <input type="text" name="username" class="form-panel-input" placeholder="Ketik username teman..." required>
+                            <input type="text" name="username" class="form-panel-input" placeholder="Ketik username teman..." required value="{{ old('username') }}">
                             <button type="submit" class="btn-submit">Cari</button>
                         </div>
+                        @error('username')
+                            <span class="error-message" style="color: #e53e3e; font-size: 12px; margin-top: 6px; display: block; font-weight: 500;">{{ $message }}</span>
+                        @enderror
                     </form>
                 </div>
 
@@ -464,7 +467,7 @@
                             $lastMsgTime = $lastMsg ? $lastMsg->created_at->format('H:i') : '';
                         @endphp
                         
-                        <a href="#" class="chat-item {{ $activeChat && $activeChat->id === $chat->id ? 'active' : '' }}">
+                        <a href="{{ route('chats.view', $chat->id) }}" class="chat-item {{ $activeChat && $activeChat->id === $chat->id ? 'active' : '' }}">
                             <div class="avatar {{ $isGroup ? 'avatar-group' : '' }}">
                                 {{ $avatarInitial }}
                             </div>
