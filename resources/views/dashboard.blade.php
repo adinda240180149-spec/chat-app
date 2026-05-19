@@ -562,17 +562,20 @@
                     </form>
                 </div>
 
-                <!-- Form Panel Buat Grup (Akan Berfungsi di Stage 9) -->
-                <div class="form-panel" id="formGroup">
-                    <h3>Buat Grup Obrolan</h3>
-                    <form action="#" method="POST">
-                        @csrf
-                        <div class="form-panel-group">
-                            <input type="text" name="group_name" class="form-panel-input" placeholder="Nama grup baru..." required>
-                            <button type="submit" class="btn-submit">Buat</button>
-                        </div>
-                    </form>
-                </div>
+                 <!-- Form Panel Buat Grup -->
+                 <div class="form-panel" id="formGroup" style="{{ $errors->has('group_name') ? 'display: block;' : '' }}">
+                     <h3>Buat Grup Obrolan</h3>
+                     <form action="{{ route('chats.group') }}" method="POST">
+                         @csrf
+                         <div class="form-panel-group">
+                             <input type="text" name="group_name" class="form-panel-input" placeholder="Nama grup baru..." required value="{{ old('group_name') }}">
+                             <button type="submit" class="btn-submit">Buat</button>
+                         </div>
+                         @error('group_name')
+                             <span class="error-message" style="color: #e53e3e; font-size: 12px; margin-top: 6px; display: block; font-weight: 500;">{{ $message }}</span>
+                         @enderror
+                     </form>
+                 </div>
             </div>
 
             <!-- Daftar Chat -->
@@ -639,12 +642,32 @@
                         $subtitle = 'Grup Obrolan';
                     }
                 @endphp
-                <div class="chat-header">
-                    <div>
-                        <h2 class="chat-header-title">{{ $activeChatName }}</h2>
-                        <div class="chat-header-subtitle">{{ $subtitle }}</div>
-                    </div>
-                </div>
+                 <div class="chat-header">
+                     <div>
+                         <h2 class="chat-header-title">{{ $activeChatName }}</h2>
+                         <div class="chat-header-subtitle">{{ $subtitle }}</div>
+                     </div>
+                     @if ($activeChat->type === 'group')
+                         <div style="position: relative;">
+                             <button class="btn-action" onclick="toggleForm('formInviteUser')" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; width: auto; flex: none;">+ Undang Anggota</button>
+                             
+                             <!-- Form Panel Undang Anggota ke Grup -->
+                             <div class="form-panel" id="formInviteUser" style="position: absolute; right: 0; top: 40px; width: 280px; z-index: 20; box-shadow: 0 4px 15px rgba(0,0,0,0.08); {{ $errors->has('invite_username') ? 'display: block;' : '' }}">
+                                 <h3>Undang Anggota</h3>
+                                 <form action="{{ route('chats.invite', $activeChat->id) }}" method="POST">
+                                     @csrf
+                                     <div class="form-panel-group">
+                                         <input type="text" name="username" class="form-panel-input" placeholder="Ketik username..." required>
+                                         <button type="submit" class="btn-submit">Undang</button>
+                                     </div>
+                                     @error('invite_username')
+                                         <span class="error-message" style="color: #e53e3e; font-size: 12px; margin-top: 6px; display: block; font-weight: 500;">{{ $message }}</span>
+                                     @enderror
+                                 </form>
+                             </div>
+                         </div>
+                     @endif
+                 </div>
 
                 <!-- Daftar Pesan -->
                 <div class="chat-messages" id="chatMessages">
@@ -687,7 +710,7 @@
     <script>
         function toggleForm(formId) {
             // Tutup form lainnya
-            const forms = ['formPrivate', 'formGroup'];
+            const forms = ['formPrivate', 'formGroup', 'formInviteUser'];
             forms.forEach(id => {
                 if (id !== formId) {
                     const el = document.getElementById(id);

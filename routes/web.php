@@ -24,4 +24,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/chats/private', [ChatController::class, 'startPrivateChat'])->name('chats.private');
     Route::get('/chats/{chat}', [ChatController::class, 'viewChat'])->name('chats.view');
     Route::post('/chats/{chat}/messages', [ChatController::class, 'sendMessage'])->name('messages.send');
+    Route::post('/chats/group', [ChatController::class, 'createGroupChat'])->name('chats.group');
+    Route::post('/chats/{chat}/users', [ChatController::class, 'addUserToGroup'])->name('chats.invite');
 });

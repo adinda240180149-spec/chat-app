@@ -126,4 +126,75 @@ class ChatController extends Controller
 
         return redirect()->route('chats.view', $chat->id);
     }
+
+    // Buat grup chat baru
+    public function createGroupChat(Request $request)
+    {
+        // Validasi nama grup
+        $request->validate([
+            'group_name' => 'required|string|max:255',
+        ], [
+            'group_name.required' => 'Nama grup wajib diisi.',
+            'group_name.max' => 'Nama grup maksimal 255 karakter.',
+        ]);
+
+        // Buat chat room tipe grup
+        $chat = Chat::create([
+            'name' => trim($request->group_name),
+            'type' => 'group',
+        ]);
+
+        // Hubungkan pencipta grup (user login) ke grup ini
+        $chat->users()->attach(Auth::id());
+
+        // Sentuh timestamp updated_at agar grup langsung naik ke posisi teratas
+        $chat->touch();
+
+        return redirect()->route('chats.view', $chat->id)->with('success', 'Grup obrolan baru berhasil dibuat!');
+    }
+
+    // Undang/Tambahkan user lain ke dalam grup chat aktif
+    public function addUserToGroup(Request $request, $id)
+    {
+        $chat = Chat::findOrFail($id);
+
+        // Pastikan chat room bertipe grup
+        if ($chat->type !== 'group') {
+            abort(400, 'Tidak dapat menambahkan anggota ke percakapan pribadi.');
+        }
+
+        // Keamanan: Pastikan pengundang adalah anggota grup ini
+        if (!$chat->users->contains(Auth::id())) {
+            abort(403, 'Anda bukan anggota dari grup ini.');
+        }
+
+        // Validasi input username
+        $request->validate([
+            'username' => 'required|string',
+        ], [
+            'username.required' => 'Username wajib diisi.',
+        ]);
+
+        $username = strtolower(trim($request->username));
+
+        // 1. Cari target user di database
+        $targetUser = User::where('username', $username)->first();
+
+        if (!$targetUser) {
+            return back()->withErrors(['invite_username' => 'Username tidak ditemukan!']);
+        }
+
+        // 2. Cek apakah user tersebut sudah bergabung di grup
+        if ($chat->users->contains($targetUser->id)) {
+            return back()->withErrors(['invite_username' => 'User ini sudah bergabung di dalam grup ini!']);
+        }
+
+        // 3. Tambahkan target user ke dalam grup
+        $chat->users()->attach($targetUser->id);
+
+        // Sentuh timestamp updated_at agar chat room terupdate
+        $chat->touch();
+
+        return redirect()->route('chats.view', $chat->id)->with('success', "@{$targetUser->username} berhasil diundang ke grup!");
+    }
 }
