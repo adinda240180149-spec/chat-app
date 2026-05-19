@@ -115,11 +115,17 @@ class ChatController extends Controller
         ]);
 
         // Simpan pesan baru ke database
-        Message::create([
+        $message = Message::create([
             'chat_id' => $chat->id,
             'user_id' => Auth::id(),
             'content' => trim($request->content),
         ]);
+
+        // Eager load relasi user agar nama pengirim tersedia pada payload broadcast
+        $message->load('user');
+
+        // Pancarkan event real-time
+        broadcast(new \App\Events\MessageSent($message))->toOthers();
 
         // Sentuh timestamp updated_at agar chat room ini naik ke posisi teratas daftar sidebar
         $chat->touch();

@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Chat - ChatApp</title>
+    <!-- Pusher JS Library -->
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <!-- Google Fonts Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -743,6 +745,66 @@
         if (chatMessages) {
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
+
+        @if ($activeChat !== null)
+        // Inisialisasi Pusher Client untuk Sinkronisasi Real-Time
+        Pusher.logToConsole = true; // Sangat membantu dosen & mahasiswa melakukan debugging di browser console!
+
+        const pusher = new Pusher('{{ env('PUSHER_APP_KEY', 'chatappkey') }}', {
+            cluster: '{{ env('PUSHER_APP_CLUSTER', 'mt1') }}',
+            wsHost: '{{ env('PUSHER_HOST', '127.0.0.1') }}',
+            wsPort: {{ env('PUSHER_PORT', 6001) }},
+            wssPort: {{ env('PUSHER_PORT', 6001) }},
+            forceTLS: false,
+            enabledTransports: ['ws', 'wss'],
+            authEndpoint: '/broadcasting/auth',
+            auth: {
+                headers: {
+                    'X-CSRF-Token': '{{ csrf_token() }}'
+                }
+            }
+        });
+
+        // Subscribe ke private channel chat terkait
+        const channel = pusher.subscribe('private-chat.{{ $activeChat->id }}');
+
+        // Dengarkan event MessageSent yang dipancarkan oleh server
+        channel.bind('App\\Events\\MessageSent', function(data) {
+            // Filter: Hanya render jika pesan berasal dari user lain (karena pengirim sudah merender via redirect HTTP POST)
+            if (data.user_id !== {{ Auth::id() }}) {
+                const container = document.getElementById('chatMessages');
+                if (container) {
+                    // Hapus pesan kosong default jika ada
+                    const emptyPlaceholder = container.querySelector('div[style*="text-align: center"]');
+                    if (emptyPlaceholder) {
+                        emptyPlaceholder.remove();
+                    }
+
+                    // Buat baris chat bubble baru
+                    const row = document.createElement('div');
+                    row.className = 'message-row received';
+
+                    let senderNameHtml = '';
+                    if ('{{ $activeChat->type }}' === 'group') {
+                        senderNameHtml = `<div class="message-sender">${data.sender_name}</div>`;
+                    }
+
+                    row.innerHTML = `
+                        <div class="message-bubble">
+                            ${senderNameHtml}
+                            <div class="message-content">${data.content}</div>
+                            <div class="message-time">${data.time}</div>
+                        </div>
+                    `;
+
+                    container.appendChild(row);
+
+                    // Gulung scrollbar ke bawah otomatis
+                    container.scrollTop = container.scrollHeight;
+                }
+            }
+        });
+        @endif
     </script>
 </body>
 </html>
