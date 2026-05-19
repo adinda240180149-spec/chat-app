@@ -45,4 +45,16 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    // Relasi ke Chat: User mengikuti banyak Chat (Pivot)
+    public function chats(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Chat::class)->withTimestamps();
+    }
+
+    // Relasi ke Message: User dapat mengirim banyak Message
+    public function messages(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Message::class);
+    }
 }
